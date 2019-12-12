@@ -14,13 +14,13 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="item in desserts" :key="item.name">
+                <tr v-for="(item, index) in desserts" :key="index">
                   <td>
                     <span id="item_name">{{ item.name }}</span>
                     <br />
                     <span id="item_description">{{item.description}}</span>
                   </td>
-                  <td style="text-align: center">{{ item.stablePrice }}</td>
+                  <td style="text-align: center">{{ item.price }}</td>
                   <td style="text-align: center">
                     <v-btn text @click="addItemToBasket(item)">
                       <v-icon color="orange">mdi-plus</v-icon>
@@ -45,7 +45,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="item in basketItem" :key="item.name">
+                <tr v-for="(item, index) in basketItem" :key="index">
                   <td>
                     <v-icon color="orange" @click="increaseQtn(item)">mdi-plus-box</v-icon>
                     <span id="item_name">{{item.quantity}}</span>
@@ -79,56 +79,49 @@
         </div>
       </v-col>
     </v-row>
+    <!-- <div id="manhnguyen" style="height: 1000px; background-color: yellow">
+      <h1>haksagaljsgasgl</h1>
+    </div> -->
   </v-container>
 </template>
 
 <script>
+import {dbMenuAdd} from '../../firebase'
 export default {
   data: () => ({
-    desserts: [
-      {
-        name: "apple",
-        price: 100,
-        stablePrice:100,
-        description:
-          "The border-radius property defines the radius of the elements corners.",
-        add: null
-      },
-      {
-        name: "orange",
-        price: 200,
-        stablePrice: 200,
-        description:
-          "The border-radius property defines the radius of the elements corners.",
-        add: null
-      },
-      {
-        name: "strawberry",
-        price: 400,
-        stablePrice: 400,
-        description:
-          "The border-radius property defines the radius of the elements corners.",
-        add: null
-      },
-      {
-        name: "banana",
-        price: 800,
-        stablePrice: 800,
-        description:
-          "The border-radius property defines the radius of the elements corners.",
-        add: null
-      }
-    ],
-    basketItem: [],
+    desserts: [ ],
     shippingCharge: 10,
     testTotal: 0
   }),
+  beforeCreate() {
+    this.$store.dispatch('setMenuItems')
+  },
+  created() {
+    dbMenuAdd.onSnapshot((querySnapshot) => {
+      let menuItems = []
+      querySnapshot.forEach(doc => {
+        var itemMenu = doc.data()
+        menuItems.push(
+          {
+            ...itemMenu,
+            id: doc.id
+          }
+        )
+      })
+      this.desserts = menuItems
+      console.log(menuItems, 'menuItems ne')
+    })
+  },
   mounted() {
-    this.basketItem.forEach(res => {
-      console.log(res, "testTotal");
-    });
+    console.log(this.$store.state.menuItems,'testing menu item')
   },
   computed: {
+    // desserts() {
+    //   return this.$store.getters.getMenuItem
+    // },
+    basketItem() {
+      return this.$store.state.basketItem
+    },
     totalPrice() {
       var subTotal = 0;
       this.basketItem.forEach(res => {
@@ -142,48 +135,21 @@ export default {
       } else {
         return this.totalPrice + this.shippingCharge;
       }
-    }
+    },
   },
   methods: {
     addItemToBasket(item) {
-      if (
-        this.basketItem.find(res => {
-          return res.name == item.name;
-        })
-      ) {
-        item = this.basketItem.find(res => {
-          return res.name == item.name;
-        });
-        item.quantity++;
-      } else {
-        this.basketItem.push({
-          name: item.name,
-          price: item.price,
-          quantity: 1,
-          stablePrice: item.price
-        });
-      }
-      item.price = item.quantity * item.stablePrice;
+        this.$store.commit('addItemToBasket', item)
     },
     increaseQtn(item) {
       item.quantity++;
       item.price = item.quantity * item.stablePrice;
     },
     deIncreaseQtn(item) {
-      console.log(item, "item deIncrese");
       item.quantity--;
       item.price = item.quantity * item.stablePrice;
       if (item.quantity === 0) {
-        console.log(item, "ressss");
-        this.basketItem.find(res => {
-          res.name == item.name;
-          const index = this.basketItem.indexOf(item.name);
-          console.log(index, "index");
-          if (index == -1) {
-            this.basketItem.splice(index, 1);
-          }
-          // console.log(this.basketItem)
-        });
+        this.basketItem.splice(this.basketItem.indexOf(item), 1);
       }
     }
   }

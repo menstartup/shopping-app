@@ -22,6 +22,33 @@
                      required
                      >
                      </v-text-field>
+                        <v-file-input 
+                        v-model="files"
+                        label="File input"
+                        dense
+                        counter
+                        :show-size="1000"
+                        @change="uploadImage()"
+                        >
+                            <template v-slot:selection="{ index, text }">
+                                <v-chip
+                                    v-if="index < 2"
+                                    color="deep-purple accent-4"
+                                    dark
+                                    label
+                                    small
+                                >
+                                    {{ text }}
+                                </v-chip>
+
+                                <span
+                                    v-else-if="index === 2"
+                                    class="overline grey--text text--darken-3 mx-2"
+                                >
+                                    +{{ files.length - 2 }} File(s)
+                                </span>
+                            </template>
+                        </v-file-input>
                  </div>
                  <v-row>
                      <v-col>
@@ -61,26 +88,55 @@
 </template>
 
 <script>
-import { dbMenuAdd } from '../../firebase'
+import { dbMenuAdd, fb } from '../../firebase'
 export default {
     data: () => ({
         adminData: [],
         name: '',
         description: '',
-        price: ''
+        price: '',
+        img: 'https://firebasestorage.googleapis.com/v0/b/tets4-411d9.appspot.com/o/product%2F48378688_1500181523450351_5421454702829109248_omanhava.jpg?alt=media&token=34cab540-0d45-4de5-b7fd-fae83de802c2',
+        files: null
     }
     ),
+    mounted() {
+        console.log('anh ne', this.img, typeof(this.img))
+    },
     methods: {
+        uploadImage() {
+            console.log(this.files, 'file ne =)))')
+            var storageRef = fb.storage().ref('product/'+ this.files.name)
+            let uploadTask = storageRef.put(this.files)
+            uploadTask.on('state_changed', function(snapshot){
+                console.log(snapshot, 'snapshot')
+            }, function(error) {
+                console.error(error)
+            }, function() {
+            uploadTask.snapshot.ref.getDownloadURL().then(function(downloadURL) {
+                //  var dowloadString =  downloadURL.toString()
+
+                console.log('File available at', downloadURL);
+                if(typeof(downloadURL) === 'string') {
+                    return this.img = downloadURL
+                }
+                // console.log(typeof(uploadTask, 'type gi nao'))
+                //     this.img = dowloadString
+                // console.log(this.img)
+            });
+         });
+        },
         addItem() {
             dbMenuAdd.add({
                 name: this.name,
                 description: this.description,
-                price: this.price
+                price: this.price,
+                img: this.img
             })
             this.name = ''
             this.description = ''
             this.price = ''
-        }
+        },
+        
     }
 }
 </script>
